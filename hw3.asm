@@ -929,7 +929,7 @@ check_row: #check_row should check if either rows are empty. If one row is empty
 		lbu $t4, 0($s2) #Get the number of stones in the top mancala
 		li $v0, 0
 		bgt $t3, $t4, part8returnv11 #If the bottom mancala is greater, jump to a label that will return v1=1 (since bottom is player 1)
-		bgt $t4. $t3, part8return2 #If the top mancala is greater, jump to a label that will return v1=2 (since top is player 2)
+		bgt $t4, $t3, part8return2 #If the top mancala is greater, jump to a label that will return v1=2 (since top is player 2)
 		li $v1, 0 #If the two players are tied, return v1=1
 		lw $ra, 0($sp)
 		lw $s2, 4($sp)
@@ -938,13 +938,16 @@ check_row: #check_row should check if either rows are empty. If one row is empty
 		lw $s5, 16($sp)
 		addi $sp, $sp, 20
 		jr $ra
-	part8return1: #This should do the same thing as part8return0, but with a change in the value that v0 returns
+	part8return1: #This should do the same thing as part8return0, but with a change in the value that v0 returns and a signal that the game is done
 		lbu $t3, 0($s2) #Get the number of stones in the bottom mancala
 		addi $s2, $s2, 1
 		lbu $t4, 0($s2) #Get the number of stones in the top mancala
 		li $v0, 1
+		addi $s2, $s2, 4 #Move to the player byte
+		li $t0, 'D'
+		sb $t0, 0($s2) #Store 'D' as the player byte, to signal that the game is over
 		bgt $t3, $t4, part8returnv11 #If the bottom mancala is greater, jump to a label that will return v1=1 (since bottom is player 1)
-		bgt $t4. $t3, part8return2 #If the top mancala is greater, jump to a label that will return v1=2 (since top is player 2)
+		bgt $t4, $t3, part8return2 #If the top mancala is greater, jump to a label that will return v1=2 (since top is player 2)
 		li $v1, 0 #If the two players are tied, return v1=1
 		lw $ra, 0($sp)
 		lw $s2, 4($sp)
