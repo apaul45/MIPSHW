@@ -22,8 +22,8 @@ Network:
 .text:
 main:
 	la $a0, Network
-	addi $a1, $a0, 48
-	addi $a2, $a0, 84
+	addi $a1, $a0, 60
+	addi $a2, $a0, 48
 	jal is_relation_exists
 	move $a0, $v0
 	#write test code

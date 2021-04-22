@@ -193,16 +193,18 @@ is_relation_exists: #is_relation should use two loops/labels to check if an undi
 	part9Loop:
 		lw $t0, 0($a0)
 		beq $t0, $0, part9Return0 #If no edge exists, return v0=0
-		beq $a1, $t0, part9Loop2 #If the first of two arguments is equal to the first node, jump to a label that will check if the second node = second arg
-		beq $a2, $t0, part9Loop1 #If the second arg= first node, jump to label that will check if first arg = second node 
+		beq $t0, $a1, part9Loop2 #If the first arg = first node, jump to a label that will check if the second node = second arg
+		beq $t0, $a2, part9Loop1 #If the second arg = first node, jump to label that will check if first arg = second node 
+		add $a0, $a0, $t7 #Move to the next edge
+		j part9Loop #Iterate to the next edge
 	part9Loop1: #This loop should load the second node in the given edge, and check if the first arg is equal to it
 		lw $t0, 4($a0)
-		beq $a1, $t0, part9Return1 #If this undirected edge exists, return v0=1
+		beq $t0, $a1, part9Return1 #If this undirected edge exists, return v0=1
 		add $a0, $a0, $t7 #Move to the next edge
 		j part9Loop #Iterate to the next edge
 	part9Loop2: #This loop should load the second node in the given edge, and check if the second arg is equal to it
 		lw $t0, 4($a0)
-		beq $a2, $t0, part9Return1 #If this undirected edge exists, return v0=1
+		beq $t0, $a2, part9Return1 #If this undirected edge exists, return v0=1
 		add $a0, $a0, $t7 #Move to the next edge
 		j part9Loop #Iterate to the next edge
 	part9Return0:
