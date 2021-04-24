@@ -92,7 +92,7 @@ is_person_exists:#is_person_exists should check if the specified node is in the 
 	blt $a1, $t7, part5Return0 #If the address of the person is not valid (below nodes[]), return v0=0
 	lw $t0, 0($a0) #Get the total number of nodes 
 	lw $t4, 8($a0) #get the size of a node
-	mul $t4, $t4 $t0 #Mutliply the size of a node*total number of nodes 
+	mul $t4, $t4, $t0 #Mutliply the size of a node*total number of nodes 
 	addi $a0, $t7,$t4 #Get to the start of edges 
 	bge $a1, $a0, part5Return0 #If the address of the person is not valid (above nodes[]), return v0=0
 	lbu $t0, 0($a1) #Get the char stored at the address specified by this person node
