@@ -88,12 +88,15 @@ create_person: #create person should first check if total num nodes and current 
 		addi $v0, $0, -1
 		jr $ra
 is_person_exists:#is_person_exists should check if the specified node is in the Network through checking if a node exists at the address of the specified person
-	addi $t7, $a0, 36 #get the start of nodes[]
+	addi $t7, $a0, 16 
+	lw $t0, 0($t7)
+	beq $t0, $0, part5Return0 #If the current number of nodes is 0, immediately return v0=0
+	addi $t7, $t7, 20
 	blt $a1, $t7, part5Return0 #If the address of the person is not valid (below nodes[]), return v0=0
 	lw $t0, 0($a0) #Get the total number of nodes 
 	lw $t4, 8($a0) #get the size of a node
 	mul $t4, $t4, $t0 #Mutliply the size of a node*total number of nodes 
-	addi $a0, $t7,$t4 #Get to the start of edges 
+	add $a0, $t7,$t4 #Get to the start of edges 
 	bge $a1, $a0, part5Return0 #If the address of the person is not valid (above nodes[]), return v0=0
 	lbu $t0, 0($a1) #Get the char stored at the address specified by this person node
 	beq $t0, $0, part5Return0 #If there is no node at the specified address, return 0 to indicate that no person was found

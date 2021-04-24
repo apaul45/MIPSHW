@@ -12,18 +12,15 @@ Network:
   .asciiz "NAME" # Name property (bytes 24 - 28)
   .asciiz "FRIEND" # FRIEND property (bytes 29 - 35)
    # nodes (bytes 36 - 95)	
-  .byte 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0	
+  .byte 'H' 'i' 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0	
    # set of edges (bytes 96 - 215)
   .word 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-
-
-
 
 
 .text:
 main:
 	la $a0, Network
-	addi $a1, $a0, 36
+	addi $a1, $a0,36
 	jal is_person_exists
 	#write test code
 	move $a0, $v0
