@@ -115,6 +115,7 @@ is_person_name_exists: #is_person_name_exists should use str_equals to iterate t
 		j part6Loop
 	part6Return0: #part6Return0 should return v0=0 and jump to a label that returns nothing in v1
 		li $v0, 0
+		li $t6, 0
 		part6Return:
 			move $v1, $t6
 			lw $ra, 0($sp)
@@ -302,8 +303,7 @@ add_relation_property: #add_rel_prop should extend add_rel by adding the friends
 	jal is_relation_exists
 	beq $v0, $0, part11Return0 #If the relation does not exist, jump to a label that will return v0=0
 	move $t6, $a0 #Move the address of the existing edge into t6
-	addi $t0, $s0, 29 #Move to the address that contains the "FRIEND" property
-	lw $a0, 0($t0)
+	addi $a0, $s0, 29 #Move to the address that contains the "FRIEND" property
 	addi $a1, $a3, 0 #Put the prop_name into a1, to be used in str_equals 
 	jal str_equals #Check if prop_name = "FRIEND"
 	beq $v0, $0, part11ReturnNeg1 #If propName!="FRIEND", jump to a label that will return v0=-1
@@ -341,28 +341,51 @@ is_friend_of_friend:#ifof should check if the first arg is related to the second
 	addi $s1, $a1, 0 #Save the first char into s1
 	jal get_person #Check if this person name exists in the Network using part 8
 	beq $v0, $0, part12ReturnNeg1 #If it is found that the first person doesn't exist, return v0=-1
-	addi $t2, $v0, 0 #Save the address to the first person into t2
+	addi $t9, $v0, 0 #Save the address to the first person into t2
 	addi $a0, $s0, 0
 	addi $a1, $a2, 0 
 	jal get_person #Check if the second node exists in the Network
 	beq $v0, $0, part12ReturnNeg1 #If it is found that the second person doesn't exist, return v0=-1
 	addi $t3, $v0, 0 #Save the address to the second person into t3
 	addi $a0, $s0, 0
-	addi $a1, $t2, 0 
+	addi $a1, $t9, 0 
 	addi $a2, $t3, 0 
 	jal second_relationHelper12 #Check if there's an edge between person 1 and person 2
 	beq $v0, $0, part12Return0 #If a friendship between person 1 and person 2 doesn't exist, return v0=0
 	addi $a0, $s0, 0
-	addi $a1, $t2, 0 
+	addi $a1, $t9, 0 
 	addi $a2, $t3, 0 
-	jal relationHelper12 #Check if there exists an edge between person 2 and a person besides person 1
+	jal relationHelper12 #Check if there exists an edge between person 2 and a person besides person 1 (or vice versa)
 	beq $v0, $0, part12Return0
-	addi $a0, $s0, 0
-	addi $a1, $t2, 0 
-	addi $a2, $v0, 0 #Check if a friendship between person 1 and the person that is friends with person 2 exists
-	jal second_relationHelper12
-	bgt $v0, $0, part12Return0 #If a friendship between person 1 and person 3 exists, return v0=0
+	beq $t8, $t9, friendOfFriend2 #If the person that shares a friendship with another person is person 1, jump to a label that checks if person 2 has a friendship with that person
+	beq $t8, $t3, friendOfFriend1 #If the person that shares a friendship with another person is person 2, jump to a label that checks if person 1 has a friendship with that person
+
+	friendOfFriend1: #This label should send person 1 and person 3 to be checked for a potential friendship-- if one exists, then jump to part12Return0
+		addi $a0, $s0, 0
+		addi $a1, $t9, 0 
+		addi $a2, $v1, 0 #Check if a friendship between person 1 and the person that is friends with person 2 exists (or vice versa)
+		jal second_relationHelper12
+		bgt $v0, $0, part12Return0
+		li $v0, 1
+		lw $ra, 0($sp)
+		lw $s0, 4($sp)
+		lw $s1, 8($sp)
+		addi $sp, $sp, 12
+		jr $ra
+	friendOfFriend2: #Same thing as friendOfFriend1 but with person 2
+		addi $a0, $s0, 0
+		addi $a1, $t3, 0 
+		addi $a2, $v1, 0 #Check if a friendship between person 1 and the person that is friends with person 2 exists (or vice versa)
+		jal second_relationHelper12
+		bgt $v0, $0, part12Return0
+		li $v0, 1
+		lw $ra, 0($sp)
+		lw $s0, 4($sp)
+		lw $s1, 8($sp)
+		addi $sp, $sp, 12
+		jr $ra
 	part12Return0:
+		li $v0, 0
 		lw $ra, 0($sp)
 		lw $s0, 4($sp)
 		lw $s1, 8($sp)
@@ -388,6 +411,8 @@ second_relationHelper12: #This helper is ghe exact same as is_relation_exists bu
 		beq $t0, $0, srhReturn0 #If no edge exists, return v0=0
 		beq $a1, $t0, srhLoop2 #If the first of two arguments is equal to the first node, jump to a label that will check if the second node = second arg
 		beq $a2, $t0, srhLoop1 #If the second arg= first node, jump to label that will check if first arg = second node 
+		add $a0, $a0, $t7 #Move to the next edge
+		j srhLoop
 	srhLoop1: #This loop should load the second node in the given edge, and check if the first arg is equal to it
 		lw $t0, 4($a0)
 		beq $a1, $t0, srhReturn1 #If this undirected edge exists and friendship val is 1, return v0= 1
@@ -406,7 +431,7 @@ second_relationHelper12: #This helper is ghe exact same as is_relation_exists bu
 		ble $t0, $0, srhReturn0
 		li $v0, 1 #If the friendship val is 1, return v0=1
 		jr $ra
-relationHelper12: #This helper is a lot like is_relation_exists, but only checks if the first arg is in a edge with a different person than the second
+relationHelper12: #This helper is a lot like is_relation_exists, but only checks if the first arg is in a edge with a different person than the second or vice versa
 	lw $t4, 0($a0) #Put the total number of nodes into t4
 	addi $a0, $a0, 8 #Move to the address containing the size of a node
 	lw $t5, 0($a0) #Put the size of a node into t5
@@ -417,18 +442,28 @@ relationHelper12: #This helper is a lot like is_relation_exists, but only checks
 	loop:
 		lw $t0, 0($a0)
 		beq $t0, $0, return0 #If no edge exists, return v0=0
-		beq $a1, $t0, advanceloop #If the first of two arguments is equal to the first node, jump to a label that will advance to the next edge
-		beq $a2, $t0, loop1 #If the second arg= first node, jump to label that will check if first arg != second node 
+		beq $a1, $t0, loop2 #If the first arg=first node, jump to a label that will check if the second arg!=second node
+		beq $a2, $t0, loop1 #If the second arg=first node, jump to label that will check if first arg != second node 
 		lw $t1, 4($a0)
+		addi $t8, $a1, 0 
+		beq $a1, $t1, returnAddress #If the first arg = the second node, return the address of this edge 
+		addi $t8, $a2, 0
 		beq $a2, $t1, returnAddress #If the second arg = the second node, return the address of this edge
 	advanceloop:
 		add $a0, $a0, $t7 #Move to the next edge
 		j loop #Iterate to the next edge
 	loop1: #This loop should load the second node in the given edge, and check if the first arg is equal to it
+		addi $t8, $a2 0 #Put the address of person 2 into t8
 		lw $t0, 4($a0)
-		bne $a1, $t0, returnAddress #If an undirected edge between person 2 and another person besides person 1 exists, return the address of the edge
+		bne $a1, $t0, returnAddress #If an undirected edge between person 2 and another person besides person 1 exists, return the address of the edge along with the person that person 2 shares the edge with
 		add $a0, $a0, $t7 #Move to the next edge
 		j loop #Iterate to the next edge
+	loop2:
+		addi $t8, $a1, 0 #Put the address of person 1 into t8
+		lw $t0, 4($a0)
+		bne $a2, $t0, returnAddress #If second node != second arg, return the address of this edge along with the person that person 1 shares the edge with
+		add $a0, $a0, $t7
+		j loop
 	return0:
 		li $v0, 0 
 		jr $ra 

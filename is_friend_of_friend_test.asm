@@ -2,8 +2,8 @@
 # Test your code with different Network layouts
 # Don't assume that we will use the same layout in all our tests
 .data
-Name1: .asciiz "Cacophonix"
-Name2: .asciiz "Getafix"
+Name1: .asciiz "Ali Tourre"
+Name2: .asciiz "Jane Doe"
 Name_prop: .asciiz "NAME"
 Frnd_prop: .asciiz "FRIEND"
 
@@ -17,9 +17,9 @@ Network:
   .asciiz "NAME" # Name property (bytes 24 - 28)
   .asciiz "FRIEND" # FRIEND property (bytes 29 - 35)
    # nodes (bytes 36 - 95)	
-  .byte 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0	
+  .byte 'J' 'a' 'n' 'e' ' ' 'D' 'o' 'e' 0 0 0 0 'J' 'o' 'h' 'n' ' ' 'D' 'o' 'e' 0 0 0 0 'A' 'l' 'i' ' ' 'T' 'o' 'u' 'r' 'r' 'e' 0 0  'J' 'o' 'n' 'e' ' ' 'D' 'o' 'e' 0 0 0 0  'J' 'o' 'a' 'n' ' ' 'D' 'o' 'e' 0 0 0 0	
    # set of edges (bytes 96 - 215)
-  .word 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  .word 268501060 268501084 0 268501084 268501072 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
 .text:
 main:
@@ -27,7 +27,9 @@ main:
 	la $a1, Name1
 	la $a2, Name2
 	jal is_friend_of_friend
-	
+	move $a0, $v0
+	li $v0, 1
+	syscall
 	#write test code
 	
 	li $v0, 10
