@@ -1,0 +1,270 @@
+.data
+ErrMsg: .asciiz "Invalid Argument"
+WrongArgMsg: .asciiz "You must provide exactly two arguments" #For part 1: must be more or less
+EvenMsg: .asciiz "Even"
+OddMsg: .asciiz "Odd"
+arg1_addr : .word 0 #For part 1, this stores the address of a character that indicates an op
+arg2_addr : .word 0 #For part 2, this stores the address of a hexademical string on which the operation will be executed on
+num_args : .word 0
+part5BString: .asciiz "1."
+.text:
+.globl main
+main:
+	sw $a0, num_args
+
+	lw $t0, 0($a1)
+	sw $t0, arg1_addr
+	lw $s1, arg1_addr
+
+	lw $t1, 4($a1)
+	sw $t1, arg2_addr
+	lw $s2, arg2_addr
+
+# do not change any line of code above this section
+# you can add code to the .data section
+start_coding_here:
+
+#Load num_args into t1 so that the number of arguments in the command line can be retrieved 
+lbu  $t1, num_args
+li $t2, 2
+#Use t2 to retrieve the first byte, which should be a number 
+#Check to see if the number of arguments is equal to 2, jump to print error label if otherwise
+bne $t1, $t2, printError
+#In order to retrieve the first character in arg1_addr, have to load word into t1, and then retrieve the first character in t2 to use in check1
+lw $t1, arg1_addr
+lbu $t2, 0($t1)
+j othercaseCheck
+#Part 1 of Part 1: checks if the number of arguments is correct
+ othercaseCheck: #lowercase check checks for lower case/other digits by using the min and max uppercase ascii values (A and Z), and comparing it to the character in t2
+ 	li $t3, 'A'
+ 	ble $t2, $t3, errorExit
+ 	li $t3, 'Z'
+ 	bge $t2, $t3, errorExit
+ 	j check1
+ #Error exit prints the message found at ErrMsg and exits the program-- meaning syscall 4 and syscall 10 must be used
+errorExit:
+	addi $a0, $0, 0
+	la $a0, ErrMsg
+        li $v0, 4
+        syscall
+        li $v0, 10
+        syscall     
+#1st part of a switch statement to check only the first character of the first argument
+#$t1 will contain the acceptable characters as specified by label name, and t2 will contain the first character of the first argument
+check1: #Can jump to an error faster  by checking for A or B characters-- can do using ble branch and ascii values
+	li $t1, 'O'
+	bne $t2, $t1, check2 #If the registers aren't equal, then t2 must contain a character greater than C, after which we can check for the other acceptable characters 
+	j secondArgCheck
+check2: 
+	li $t1, 'S'
+	bne $t1, $t2, check3
+	j secondArgCheck
+check3: 
+	li $t1, 'T'
+	bne $t1, $t2, check4
+	j secondArgCheck
+check4: 
+	li $t1, 'I'
+	bne $t1, $t2, check5
+	j secondArgCheck
+check5: 
+	li $t1, 'E'
+	bne $t1, $t2, check6
+	j secondArgCheck
+check6: 
+	li $t1, 'C'
+	bne $t1, $t2, check7
+	j secondArgCheck
+check7: 
+	li $t1, 'X'
+	bne $t1, $t2, check8
+	j secondArgCheck
+check8: 
+	li $t1, 'M'
+	bne $t1, $t2, errorExit
+	j secondArgCheck
+#Use secondArgCheck to initialize registers, check the first and second characters and start a loop
+#This loop should jump to switch statements during each iteration that will check what hexadecimal value the said character is or if there is no valid character , in which case
+#the ErrMsg should be printed and the program should be exited 
+secondArgCheck:
+	lw $t1, arg2_addr
+	lbu $t2, 0($t1)
+	lbu $t3, 1($t1)
+	li $t4, 'x'
+	li $t5, '0'
+	#Check to see if the first two arguments are 0 and x respectively-- compare t2 with t5 first, then t3 with t4
+	bne $t2, $t5, errorExit
+	bne $t3, $t4, errorExit
+	#Jump to loop if both conditions are met-- reset one register to use as a counter, one to store the limit of the for loop, and one to use in switch statements. 
+	#t1 still contains the word address (addi to advance)
+	#and t2 will contain the respective character
+	li $t3, 0 #Counter
+	li $t4, 8 #Number of characters to check
+	addi $t1, $t1, 1 #Advance t1 1 character forward. Since the loop initially advances t1 forward one, there's no need to advance it all the way to the first digit to check
+	j secondArgLoop
+secondArgLoop:
+	beq $t3, $t4, loadBinary
+	addi $t1, $t1, 1 #Advance to first digit to check. 
+	lb $t2, 0($t1) #string[i], i being the counter
+	addi $t3, $t3, 1 #Advance counter before sending off the byte-- that way, if the character is valid and the code jumps back, the iteration is already updated
+	j secondArgDigitCheck
+secondArgDigitCheck: #Can check for 0-9 values by using min ascii value 0 and max ascii value 9, and repeat for A-F, which  have greater ascii values than 0-9
+	addi $t5, $0, 0
+	beq $t5, $t2, errorExit
+	li $t5, '0'
+	blt $t2, $t5, errorExit
+	li $t5, '9'
+	ble $t2, $t5, secondArgLoop #Return to loop for next iteration if the number is between the range of 0-9. If not, then proceed with checking A-F
+	li $t5, 'A'
+	blt $t2, $t5, errorExit
+	li $t5, 'F'
+	bgt $t2, $t5, errorExit #Check if character is below A, or above F. If both conditions are false, then the number is within range and can return to the loop
+	j secondArgLoop
+loadBinary: #loadBinary 'parses' the hexadecimal string through converting the ascii value of each character to its proper hex value.
+	#It then takes hex values and shifts them over in their respective register in order to later combine all hex values into one register, forming a 32 bit binary number.
+	addi $t4, $0, 0 #Reset register t4, as this register will store the 32 bit binary number to be used for parts 2-5
+	addi $t1, $t1, -8 #Move back to the 'x' character
+	li $t5, 28 #Counter starts at 0, decrements by 4 every iteration
+	li $t6, -4 #Indicates when to end the loop
+	j binaryLoop
+binaryLoop: 
+	beq $t5, $t6, operationCheck
+	addi $t1, $t1, 1 #Advance to first digit to check
+	lb $t2, 0($t1)
+	j hexSubtract1
+hexSubtract1: #Checks if the character in t2 is 0-9 first, and if not, sends off to hexConverter2. Both will shift over t2 by the right amount before or-ing it into t4
+	li $t3, '9'
+	bgt $t2, $t3, hexSubtract2
+	addi $t2, $t2, -48
+	sllv $t2, $t2, $t5
+	or $t4, $t2, $t4 #Add the newly shifted bits from t2 into t4, the register which will contain the 32 bit binary number to be used for parts 2a-5
+	addi $t5, $t5, -4 #Decrement counter before jumping back to the loop
+	j binaryLoop
+hexSubtract2:
+	addi $t2, $t2, -55
+	sllv $t2, $t2, $t5
+	or $t4, $t2, $t4 #Add the newly shifted bits from t2 into t4, the register which will contain the 32 bit binary number to be used for parts 2a-5
+	addi $t5, $t5, -4 #Decrement counter before jumping back to the loop
+	j binaryLoop	
+ operationCheck:	#Checks which operator is in arg1_addr, and sends off to the appropriate label
+ 	lw $t1, arg1_addr
+ 	lb $t2, 0($t1)
+ 	li $t3, 'O'
+ 	beq $t3, $t2, part2A
+ 	li $t3, 'S'
+ 	beq $t3, $t2, part2B
+ 	li $t3, 'T'
+ 	beq $t3, $t2, part2C
+ 	li $t3, 'I'
+ 	beq $t3, $t2, part2D
+ 	li $t3, 'E'
+ 	beq $t3, $t2, part3
+ 	li $t3, 'C'
+ 	beq $t3, $t2, part4
+ 	li $t3, 'X'
+ 	beq $t3, $t2, part5A
+ 	j part5B
+ part2A: #Have to shift over the 0-6 first bits in t4 to the end to be used correctly
+ 	li $t3, 26
+ 	srlv $t4, $t4, $t3
+ 	li $v0, 1
+ 	add $a0, $t4, $0
+ 	syscall
+ 	j exitProgram
+ part2B: #Have to first shift over left 6 bits, then shift right 27 bits
+ 	li $t3, 6
+ 	sllv $t4, $t4, $t3
+ 	li $t3, 27
+ 	srlv $t4, $t4, $t3
+ 	li $v0, 1
+ 	 add $a0, $t4, $0
+ 	syscall
+ 	j exitProgram
+ part2C: #Have to shift over left 11 bits, then shift right 27 bits
+ 	li $t3, 11
+ 	sllv $t4, $t4, $t3
+ 	li $t3, 27
+ 	srlv $t4, $t4, $t3
+ 	li $v0, 1
+ 	add $a0, $t4, $0
+ 	syscall
+ 	j exitProgram
+ part2D: #Have to first check the msb (in this case, the 17th bit), which can be done by checking the 5th hex value. Then, have to flip all bits and add 1
+ 	lw $t1, arg2_addr
+ 	addi $t1, $t1, 6
+ 	lb $t2, 0($t1)
+ 	li $t3, 56
+ 	andi $t4, $t4, 0xFFFF #Can isolate the last 16 bits by andi'ing with 0xFFFF
+ 	bge $t2, $t3, twosFlip
+ 	 li $v0, 1
+ 	add $a0, $t4, $0
+ 	syscall
+ 	j exitProgram
+ twosFlip: #Flip all bits, then add 1 and return the result as a negative value
+ 	xori $t4, $t4, 0xFFFF #Can complement they bytes in the last 2 bytes using xori with the specified number of hex values-- due to little endianness
+ 	addi $t4, $t4, 1 #To complete conversion of twos complement number
+ 	neg $t4, $t4
+ 	li $v0, 1
+ 	add $a0, $t4, $0
+ 	syscall
+ 	j exitProgram
+ part3: #Have to isolate the last bit (or nibble) in t4, and check whether t4 is then less than or greaterthan/equal to 1
+ 	andi $t6, $t4, 1 #Isolate the last bit in t4 by andi'ing with 1, and load the result into t and check t6
+ 	beq $t6, $zero, evenPrint
+	la $a0, OddMsg
+	li $v0, 4
+	syscall
+	j exitProgram
+evenPrint: 
+	la $a0, EvenMsg
+	li $v0, 4
+	syscall
+	j exitProgram
+part4: #Can count 1s by constantly comparing the msb with and a 16 bit immediate that only has 1 as a msb, and setting that value into a separate register
+#Once that register is set, check if the register is 0 or not and increment the counter as needed. Then, shift t4 right 1 to set a new msb and repeat
+	li $t1, 0 #Loop counter
+	li $t3, 32 #Checking 32 bits
+	addi $t7, $0, 0 #Ones counter
+	addi $t6, $0, 0 #The register containing the result of the andi operation in the loop
+	j part4Loop
+part4Loop:
+	beq $t1, $t3, part4Print
+	andi $t6, $t4, 1
+	bgt $t6, $zero, addOne
+	addi $t1, $t1, 1 #Advance counter
+	srl $t4, $t4, 1 #Set a new lsb
+	j part4Loop
+addOne:
+	addi $t7, $t7, 1 #Add one to the ones counter
+	addi $t1, $t1, 1 #Advance counter
+	srl $t4, $t4, 1 #Set a new lsb
+	j part4Loop
+part4Print:
+	move $a0, $t7
+	li $v0, 1
+	syscall
+	j exitProgram
+part5A: #Have to shift left and then right to get isolate bits 2-9, and then subtract 127 from t4 and print the resulting value
+	sll $t4, $t4, 1
+	srl $t4, $t4, 24
+	addi $t4, $t4, -127
+	move $a0, $t4
+	li $v0, 1
+	syscall
+	j exitProgram
+part5B: #Have to shift left 9 bits, and then print the resulting binary number with a '1.' in front
+	sll $t4, $t4, 9
+	la $a0, part5BString
+	li $v0, 4
+	syscall
+	move $a0, $t4
+	li $v0, 35
+	syscall
+ exitProgram:
+ 	li $v0, 10
+ 	syscall
+ printError: 
+	addi $a0, $0, 0
+	la $a0, WrongArgMsg
+        li $v0, 4
+        syscall
