@@ -152,6 +152,7 @@ update_N_terms_in_polynomial: #update is a lot like addNterms, but a little simp
 	sw $s0, 4($sp) #s0 saves base address of Polynomial p
 	sw $s1, 8($sp) #s1 saves base address of duplicates[]
 	sw $s2, 12($sp) #s2 saves base address of terms[]
+	#Dummy comment
 	addi $t2, $0, 0 #Loop counter
 	ble $a2, $0, part4Return #If N<=0, return v0=0
 	move $s0, $a0
